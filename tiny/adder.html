@@ -1,0 +1,31 @@
+<html>
+<head>
+    <title>test</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        function goclick() {
+            let n1 = $("#n1").val();
+            let n2 = $("#n2").val();
+            $.ajax({
+                type: "GET",
+                url: "/cgi-bin/adder",
+                data: { num1: n1, num2: n2 }, 
+                success: function (response) {
+                    $("#result").html(response);
+                },
+                error: function () {
+                    alert("서버 요청이 없는데요?");
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <input type="text" id="n1">
+    <input type="text" id="n2">
+    <button onclick="goclick()" type="button">gogo</button>
+    
+    <!-- 결과를 표시할 영역 -->
+    <div id="result"></div>
+</body>
+</html>

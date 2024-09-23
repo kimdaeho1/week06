@@ -31,18 +31,18 @@
 
 /* Default file permissions are DEF_MODE & ~DEF_UMASK */
 /* $begin createmasks */
-#define DEF_MODE   S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
+#define DEF_MODE   S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH  //기본 파일 권한 정의. 
 #define DEF_UMASK  S_IWGRP|S_IWOTH
 /* $end createmasks */
 
 /* Simplifies calls to bind(), connect(), and accept() */
 /* $begin sockaddrdef */
-typedef struct sockaddr SA;
+typedef struct sockaddr SA; //소켓 관련 함수에서 사용할 수 있도록 소켓 주소 정의
 /* $end sockaddrdef */
 
 /* Persistent state for the robust I/O (Rio) package */
 /* $begin rio_t */
-#define RIO_BUFSIZE 8192
+#define RIO_BUFSIZE 8192    //rio패키지를 위한 것으로, 파일 디스크립터와 버퍼 관리 정보를 담는다.
 typedef struct {
     int rio_fd;                /* Descriptor for this internal buf */
     int rio_cnt;               /* Unread bytes in internal buf */
@@ -52,7 +52,7 @@ typedef struct {
 /* $end rio_t */
 
 /* External variables */
-extern int h_errno;    /* Defined by BIND for DNS errors */ 
+extern int h_errno;    /* Defined by BIND for DNS errors */     //외부 변수, 네트워크와 환경 변수 처리
 extern char **environ; /* Defined by libc */
 
 /* Misc constants */
@@ -60,14 +60,14 @@ extern char **environ; /* Defined by libc */
 #define MAXBUF   8192  /* Max I/O buffer size */
 #define LISTENQ  1024  /* Second argument to listen() */
 
-/* Our own error-handling functions */
+/* Our own error-handling functions */  //에러 처리 함수
 void unix_error(char *msg);
 void posix_error(int code, char *msg);
 void dns_error(char *msg);
 void gai_error(int code, char *msg);
 void app_error(char *msg);
 
-/* Process control wrappers */
+/* Process control wrappers */  //프로세스 제어 함수, 프로세스 생성, 실행, 대기등의 작업 수행
 pid_t Fork(void);
 void Execve(const char *filename, char *const argv[], char *const envp[]);
 pid_t Wait(int *status);
@@ -79,7 +79,7 @@ unsigned int Alarm(unsigned int seconds);
 void Setpgid(pid_t pid, pid_t pgid);
 pid_t Getpgrp();
 
-/* Signal wrappers */
+/* Signal wrappers */   //신호 처리 함수
 typedef void handler_t(int);
 handler_t *Signal(int signum, handler_t *handler);
 void Sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
@@ -90,8 +90,7 @@ void Sigdelset(sigset_t *set, int signum);
 int Sigismember(const sigset_t *set, int signum);
 int Sigsuspend(const sigset_t *set);
 
-/* Sio (Signal-safe I/O) routines */
-ssize_t sio_puts(char s[]);
+/* Sio (Signal-safe I/O) routines */   
 ssize_t sio_putl(long v);
 void sio_error(char s[]);
 
@@ -100,7 +99,7 @@ ssize_t Sio_puts(char s[]);
 ssize_t Sio_putl(long v);
 void Sio_error(char s[]);
 
-/* Unix I/O wrappers */
+/* Unix I/O wrappers */     //입출력함수
 int Open(const char *pathname, int flags, mode_t mode);
 ssize_t Read(int fd, void *buf, size_t count);
 ssize_t Write(int fd, const void *buf, size_t count);
@@ -130,13 +129,13 @@ void Fputs(const char *ptr, FILE *stream);
 size_t Fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 void Fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 
-/* Dynamic storage allocation wrappers */
+/* Dynamic storage allocation wrappers */   //동적 메모리 할당 함수
 void *Malloc(size_t size);
 void *Realloc(void *ptr, size_t size);
 void *Calloc(size_t nmemb, size_t size);
 void Free(void *ptr);
 
-/* Sockets interface wrappers */
+/* Sockets interface wrappers */    //소켓 함수
 int Socket(int domain, int type, int protocol);
 void Setsockopt(int s, int level, int optname, const void *optval, int optlen);
 void Bind(int sockfd, struct sockaddr *my_addr, int addrlen);
@@ -172,7 +171,7 @@ void Sem_init(sem_t *sem, int pshared, unsigned int value);
 void P(sem_t *sem);
 void V(sem_t *sem);
 
-/* Rio (Robust I/O) package */
+/* Rio (Robust I/O) package */  //리오 패키지 신뢰성 있는 입출력 처리를 위한 함수.
 ssize_t rio_readn(int fd, void *usrbuf, size_t n);
 ssize_t rio_writen(int fd, void *usrbuf, size_t n);
 void rio_readinitb(rio_t *rp, int fd); 
@@ -186,7 +185,7 @@ void Rio_readinitb(rio_t *rp, int fd);
 ssize_t Rio_readnb(rio_t *rp, void *usrbuf, size_t n);
 ssize_t Rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen);
 
-/* Reentrant protocol-independent client/server helpers */
+/* Reentrant protocol-independent client/server helpers */  //클라이언트 서버 도우미 함수
 int open_clientfd(char *hostname, char *port);
 int open_listenfd(char *port);
 
