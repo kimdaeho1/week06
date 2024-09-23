@@ -29,10 +29,11 @@ void addcache(cache_block *new_block, int cache_size);
 void removecache();
 cache_block* getcache(char *url);
 pthread_mutex_t cache_mutex;
+void print_cache();
 
-cache_block * cache_head = NULL;  //캐시의 헤드 설정
-cache_block * cache_tail = NULL;  //삭제하기 위한 캐시의 tail 설정
-int total_size = 0;               //캐시의 총 사이즈 선언
+cache_block * cache_head = NULL; //캐시의 헤드 설정
+cache_block * cache_tail = NULL;
+int total_size = 0; //캐시의 총 사이즈 선언
 
 
 int main(int argc, char **argv) { //입력된 인자의 개수, 명령줄 인자의 문자열 배열. 
@@ -114,17 +115,17 @@ void doit(int clientfd) //클라이언트 요청을 처리하는 역할
     Rio_writen(clientfd, sebuf, n);         //클라에 전송하기. (buf를 새로 설정하지 않아도 작동함)
   }
 
-  cache_block *new_block = Malloc(sizeof(cache_block)); //캐시에 저장하고.
-  sprintf(new_block->url, "%s", url);
+  cache_block *new_block = Malloc(sizeof(cache_block));
+  sprintf(new_block->url, "%s:%s%s", url,port,uri);
   strcpy(new_block->data, cache_buf);
   new_block->size = cache_size;
 
-  while((total_size + cache_size ) > MAX_CACHE_SIZE)  //만약 사이즈가 넘었다면 지우고
+  while((total_size + cache_size ) > MAX_CACHE_SIZE)
   {
     removecache();
   }
 
-  addcache(new_block, cache_size);  //사이즈를 맞춘 후에 캐시에 더하기.
+  addcache(new_block, cache_size);
 
   Close(serverfd);  //클라 소켓 닫기
 }
@@ -155,30 +156,30 @@ void read_requesthdrs(rio_t *rp, char *appbuf) {
     while (strcmp(buf, "\r\n")) {
         is_excluded = 0; // 초기화
 
-        
-        for (int i = 0; i < 4; i++) {             // byonsu 배열에 있는지 확인
-            if (strstr(buf, byonsu[i]) == buf) {  // 헤더가 byonsu에 포함되어 있으면
-                is_excluded = 1;                  // 제외 플래그 설정
+        // byonsu 배열에 있는지 확인
+        for (int i = 0; i < 4; i++) {
+            if (strstr(buf, byonsu[i]) == buf) { // 헤더가 byonsu에 포함되어 있으면
+                is_excluded = 1; // 제외 플래그 설정
                 break;
             }
         }
 
-        
-        if (!is_excluded) {       // 제외되지 않은 헤더는 appbuf에 저장
-            strcat(appbuf, buf);  // appbuf에 추가
+        // 제외되지 않은 헤더는 appbuf에 저장
+        if (!is_excluded) {
+            strcat(appbuf, buf); // appbuf에 추가
         }
 
-        printf("%s", buf);                // 콘솔에 출력
-        Rio_readlineb(rp, buf, MAXLINE);  // 다음 헤더 읽기
+        printf("%s", buf); // 콘솔에 출력
+        Rio_readlineb(rp, buf, MAXLINE); // 다음 헤더 읽기
     }
 }
 
-void parse_url(char *url, char *hostname, char *port, char *uri) {  // 호스트명을 가리키는 포인터 설정
-    
+void parse_url(char *url, char *hostname, char *port, char *uri) {
+    // 호스트명을 가리키는 포인터 설정
     char *hostname_ptr = strstr(url, "//") != NULL ? strstr(url, "//") + 2 : url + 1;
     char *port_ptr = strstr(hostname_ptr, ":");    // 포트를 가리키는 포인터 설정
     char *uri_ptr = strstr(hostname_ptr, "/");    // 경로를 가리키는 포인터 설정
-    char old_url[MAXLINE];
+    char old_url;
     strcpy(old_url, url); //파싱하기 전 url을 old_url에 저장헀다가
     
                         
@@ -192,11 +193,11 @@ void parse_url(char *url, char *hostname, char *port, char *uri) {  // 호스트
         *port_ptr = '\0';           // 포트 부분을 끝낼 문자'\0'
         strcpy(port, port_ptr + 1); // 포트를 port 버퍼에 복사
     }
-    strcpy(hostname, hostname_ptr); // 호스트명을 hostname 버퍼에 복사
     strcpy(url, old_url); //복구(왜했냐면, 캐시를 저장할때 전체의 url이 저장되어야 같은 요청을 받았을 경우 캐시에서 찾아서 클라이언트에 넘겨주는데, url이 파싱되서 조각나버려서 임시조치했다)
+    strcpy(hostname, hostname_ptr); // 호스트명을 hostname 버퍼에 복사
 } 
 
-void *thread(void *vargp)   //동시성을 위한 스레드(CSAPP에 있는거)
+void *thread(void *vargp)
 {
   int clientfd = *((int *)vargp);
   Pthread_detach(pthread_self());
@@ -210,20 +211,22 @@ void *thread(void *vargp)   //동시성을 위한 스레드(CSAPP에 있는거)
 void addcache(cache_block *new_block, int cache_size)
 {
   pthread_mutex_lock(&cache_mutex);
+  printf("total_size = %d\r\n", total_size);
 
-  new_block->next = cache_head;   //새 블록의 다음이 캐시의 맨앞값
-  new_block->prev = NULL;         //새로운 블록의 이전값은 NULL
+  new_block->next = cache_head; //새 블록의 다음이 캐시의 맨앞값
+  new_block->prev = NULL;   //새로운 블록의 이전값은 NULL
 
-  if(cache_head != NULL)          //리스트에 이미 캐시가 있었다면
+  if(cache_head != NULL)  //리스트에 이미 캐시가 있었다면
   {
     cache_head->prev = new_block; // 맨 앞 캐시의 이전값이 새로운 블록이 되고
   }
   else 
   {
-    cache_tail = new_block;       //캐시의 끝이 없을때만 cache_tail을 업데이트한다.(계속 마지막을 가리킬 것)
+    cache_tail = new_block; //캐시의 끝이 없을때만 cache_tail을 업데이트한다.(계속 마지막을 가리킬 것)
   }
   cache_head = new_block;
-  total_size += new_block->size;  //totalsize최신화
+  total_size += new_block->size;
+  printf("new total size = %d\r\n", total_size);
   pthread_mutex_unlock(&cache_mutex);
 }
 
@@ -231,10 +234,10 @@ void removecache()
 {
   pthread_mutex_lock(&cache_mutex);
   printf("prevdeletetotal_size = %d", total_size);
-  if(cache_tail == NULL)        //tail이 null이면
+  if(cache_tail == NULL)  //tail이 null이면
   {
     pthread_mutex_unlock(&cache_mutex);
-    return;                   //return
+    return; //return
   }
 
   cache_block *old_block = cache_tail;
@@ -257,17 +260,18 @@ void removecache()
   pthread_mutex_unlock(&cache_mutex);
 }
 
-cache_block* getcache(char *url)              //클라이언트의 요청을 분석하고, 캐시를 찾고, 있다면 캐시블록을 앞으로 옮기고, 포인터를 반환한다.
+cache_block* getcache(char *url)
 {
+  print_cache();
   pthread_mutex_lock(&cache_mutex);
   printf("getcacheurl = %s\r\n",url);
   printf("url의 길이 : %d\r\n", strlen(url));
   cache_block *curr = cache_head;
-  while(curr != NULL) //현재 포인터가 null을 가리킬떄까지
+  while(curr != NULL)
   {
-    if(strcmp(curr->url, url) == 0) //url이 같은 것을 찾습니다
+    if(strcmp(curr->url, url) == 0)
     {
-      if(curr != cache_head)
+      if(curr != cache_head)//헤드가 아니라면
       {
         if(curr->prev != NULL)
         {
@@ -287,13 +291,23 @@ cache_block* getcache(char *url)              //클라이언트의 요청을 분
         {
           cache_head->prev = curr;
         }
-        cache_head = curr;    //만약 캐시를 찾았으면 포인터는 그 캐시블록을 가리키고, 포인터를 리턴한다
+        cache_head = curr;
       }
+      printf("캐시 찾았다\r\n");
       pthread_mutex_unlock(&cache_mutex);
       return curr;
     }
-    curr = curr->next;  //못찾으면 다음거
+    curr = curr->next;
   }
+  printf("아니 못찾았음\r\n");
   pthread_mutex_unlock(&cache_mutex);
-  return NULL;  //없으면 NULL반환
+  return NULL;
 } 
+
+void print_cache() {
+    cache_block *current = cache_head; // 캐시의 헤드부터 시작
+    while (current != NULL) {
+        printf("캐시 블록 URL: %s\n", current->url);
+        current = current->next; // 다음 블록으로 이동
+    }
+}
